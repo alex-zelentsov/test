@@ -65,11 +65,7 @@ public class NoteService implements INoteService {
     @Override
     public void uploadFile(Long id, MultipartFile file) {
         Note foundNote = noteRepository.findOne(id);
-        foundNote = NoteUtils.createNewNoteFrom(foundNote);
-        Note oldNote = new Note(foundNote.getTitle(),
-                foundNote.getContent(),
-                foundNote.getTags(),
-                foundNote.getAttachments());
+        Note oldNote = NoteUtils.createNewNoteFrom(foundNote);
         Note updatedNote = fileUploadService.uploadFileForNote(file, id);
         updatedNote = changeService.addChange(ChangeType.UPLOAD_FILE, oldNote, updatedNote);
         noteRepository.save(updatedNote);
