@@ -45,24 +45,29 @@ public class FileUploadServiceTest {
         Note note = noteRepository.save(new Note("title", "content", Collections.emptyList(), null));
 
         fileUploadService.uploadFileForNote(FILE, note.getId());
-        Note foundNode = noteRepository.findOne(note.getId());
-        List<Attachment> attachments = foundNode.getAttachments();
-        Attachment foundAttachment = attachments.get(0);
-        assertTrue(Arrays.equals(FILE.getBytes(), foundAttachment.getContent()));
+
+        int attachmentsCount = 1;
+        int attachmentForCheck = 0;
+        checkAttachments(note, attachmentsCount, attachmentForCheck);
     }
 
     @Test
     @Transactional
     public void testUploadCorrectFileForNodeWithAttachments() throws Exception {
         Note note = createNote(FILE);
+
         fileUploadService.uploadFileForNote(FILE, note.getId());
 
+        int attachmentsCount = 2;
+        int attachmentForCheck = 1;
+        checkAttachments(note, attachmentsCount, attachmentForCheck);
+    }
+
+    private void checkAttachments(Note note, int attachmentsCount, int attachmentForCheck) throws IOException {
         Note foundNode = noteRepository.findOne(note.getId());
         List<Attachment> foundAttachments = foundNode.getAttachments();
-
-        assertEquals(2, foundAttachments.size());
-
-        Attachment foundAttachment = foundAttachments.get(1);
+        assertEquals(attachmentsCount, foundAttachments.size());
+        Attachment foundAttachment = foundAttachments.get(attachmentForCheck);
         assertTrue(Arrays.equals(FILE.getBytes(), foundAttachment.getContent()));
     }
 

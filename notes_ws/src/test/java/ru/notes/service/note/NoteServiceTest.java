@@ -20,6 +20,7 @@ import ru.notes.model.note.Note;
 import ru.notes.repository.note.NoteRepository;
 import ru.notes.service.upload.IFileUploadService;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -45,19 +46,23 @@ public class NoteServiceTest {
     @Test
     @Transactional
     public void testThatAfterUploadFileNoteContainsCorrectAttachmentAndChanges() throws Exception {
-        Note note = new Note("testTitle", "testContent", Collections.emptyList(), null);
         MultipartFile file = new MockMultipartFile(NAME, TEST_NAME, TEST_TYPE, TEST_CONTENT.getBytes());
-        Note save = noteRepository.save(note);
-        long noteId = save.getId();
+        long noteId = preparedNote();
+
         noteService.uploadFile(noteId, file);
 
         Note foundNote = noteRepository.findOne(noteId);
-        List<Attachment> attachments = foundNote.getAttachments();
-        assertEquals(1, attachments.size());
-        Attachment attachment = attachments.get(0);
-        assertEquals(file.getOriginalFilename(), attachment.getName());
-        assertTrue(Arrays.equals(file.getBytes(), attachment.getContent()));
+        checkAttachments(file, foundNote);
+        checkChanges(foundNote);
+    }
 
+    private long preparedNote() {
+        Note note = new Note("testTitle", "testContent", Collections.emptyList(), null);
+        Note save = noteRepository.save(note);
+        return save.getId();
+    }
+
+    private void checkChanges(Note foundNote) {
         List<Change> changes = foundNote.getChanges();
         assertEquals(1, changes.size());
         Change change = changes.get(0);
@@ -68,6 +73,14 @@ public class NoteServiceTest {
         assertEquals(DiffType.ATTACHMENTS.name(), diff.getType());
         assertEquals("", diff.getBefore());
         assertEquals(TEST_NAME, diff.getAfter());
+    }
+
+    private void checkAttachments(MultipartFile file, Note foundNote) throws IOException {
+        List<Attachment> attachments = foundNote.getAttachments();
+        assertEquals(1, attachments.size());
+        Attachment attachment = attachments.get(0);
+        assertEquals(file.getOriginalFilename(), attachment.getName());
+        assertTrue(Arrays.equals(file.getBytes(), attachment.getContent()));
     }
 
     @After

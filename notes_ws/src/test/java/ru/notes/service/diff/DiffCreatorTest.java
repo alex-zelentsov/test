@@ -17,7 +17,6 @@ import static org.junit.Assert.assertEquals;
  */
 public class DiffCreatorTest {
 
-    IDiffCreator diffCreator = new DiffCreator();
     @Test
     public void testCreateDiff() throws Exception {
         Note oldNote = new Note(
@@ -31,6 +30,7 @@ public class DiffCreatorTest {
                 Arrays.asList(new Tag("tag2"), new Tag("tag3")),
                 Collections.singletonList(new Attachment("file2", "content2".getBytes())));
 
+        IDiffCreator diffCreator = new DiffCreator();
         List<Diff> diffs = diffCreator.createDiffList(oldNote, newNote);
 
         String expectedDiff = "[Diff{id=0, type='TITLE', before='title1', after='title2'}, " +

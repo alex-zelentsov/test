@@ -36,7 +36,8 @@ public class ChangeServiceTest {
     @Autowired
     private IChangeService changeService;
 
-    Note savedNote = null;
+    private Note savedNote = null;
+    private ChangeType changeType = ChangeType.UPDATE;
 
     @Before
     public void before() {
@@ -45,9 +46,7 @@ public class ChangeServiceTest {
 
     @Test
     @Transactional
-    public void testThatRegisterChangeCorrect() throws Exception {
-        ChangeType changeType = ChangeType.UPDATE;
-
+    public void testThatAddChangeCorrect() throws Exception {
         changeService.addChange(changeType, null, savedNote);
         Note foundNote = noteRepository.findOne(savedNote.getId());
 
@@ -60,9 +59,7 @@ public class ChangeServiceTest {
 
     @Test
     @Transactional
-    public void testGetAllChangesAfterAddingNoteWithChanges() {
-        ChangeType changeType = ChangeType.UPDATE;
-
+    public void testGetAllChangesAfterAddingNoteCorrect() {
         changeService.addChange(changeType, null,  savedNote);
         List<Change> allChanges = changeService.getAllChanges();
 

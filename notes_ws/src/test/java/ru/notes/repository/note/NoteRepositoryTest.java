@@ -64,25 +64,35 @@ public class NoteRepositoryTest {
     @Test
     @Transactional
     public void testAddChangeForNote() {
-        Diff diffOne = new Diff(DiffType.TITLE.name(), "before test1", "after test1");
-        Diff diffTwo = new Diff(DiffType.TITLE.name(), "before test2", "after test2");
-        List<Diff> diffs = new ArrayList<>();
-        diffs.add(diffOne);
-        diffs.add(diffTwo);
-        Change change = new Change(ChangeType.UPLOAD_FILE.name(), LocalDateTime.now(), diffs);
-        List<Change> changes = note.getChanges();
-        if(changes == null) {
-            changes = new ArrayList<>();
-        }
-        changes.add(change);
+        Change change = createChange();
+        note = setChangesToNote(change, note);
 
-        note.setChanges(changes);
         Note updatedNote = noteRepository.save(note);
 
         List<Change> changeList = updatedNote.getChanges();
         assertEquals(1, changeList.size());
         Change resultChange = changeList.get(0);
         assertEquals(change, resultChange);
+    }
+
+    private Change createChange() {
+        Diff diffOne = new Diff(DiffType.TITLE.name(), "before test1", "after test1");
+        Diff diffTwo = new Diff(DiffType.TITLE.name(), "before test2", "after test2");
+        List<Diff> diffs = new ArrayList<>();
+        diffs.add(diffOne);
+        diffs.add(diffTwo);
+        return new Change(ChangeType.UPLOAD_FILE.name(), LocalDateTime.now(), diffs);
+    }
+
+    private Note setChangesToNote(Change change, Note targetNote) {
+        List<Change> changes = targetNote.getChanges();
+        if(changes == null) {
+            changes = new ArrayList<>();
+        }
+        changes.add(change);
+
+        targetNote.setChanges(changes);
+        return targetNote;
     }
 
     @After
