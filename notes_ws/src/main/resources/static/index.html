@@ -1,0 +1,162 @@
+<!doctype html>
+<html>
+    <head>
+        <title>Notes</title>
+        <style>
+            .title.ng-valid {
+                background-color: lightgreen;
+            }
+            .title.ng-dirty.ng-invalid-required {
+                background-color: red;
+            }
+            .title.ng-dirty.ng-invalid-minlength {
+                background-color: red;
+            }
+
+            .content.ng-valid {
+                background-color: lightgreen;
+            }
+            .content.ng-dirty.ng-invalid-required {
+                background-color: red;
+            }
+            .content.ng-dirty.ng-invalid-minlength {
+                background-color: red;
+            }
+
+        </style>
+        <link rel="stylesheet" type="text/css" href="js/bower_components/bootstrap-css-only/css/bootstrap.min.css" />
+        <link rel="stylesheet" href="js/bower_components/ng-tags-input/ng-tags-input.min.css">
+    </head>
+    <body ng-app="notesApp" class="ng-cloak">
+        <div class="generic-container" ng-controller="NoteController as ctrl">
+            <div class="panel panel-default">
+                <div class="panel-heading"><span class="lead">Note Creation Form </span></div>
+                <div class="formcontainer">
+                    <form name="createNote" class="form-horizontal">
+                        <input type="hidden" ng-model="ctrl.note.id" />
+                        <div class="row">
+                            <div class="form-group col-md-12">
+                                <label class="col-md-2 control-lable" for="title">Title</label>
+                                <div class="col-md-7">
+                                    <input type="text" ng-model="ctrl.note.title" id="title" class="title form-control input-sm" placeholder="Enter note's title" required ng-minlength="3"/>
+                                    <div class="has-error" ng-show="createNote.$dirty">
+                                        <span ng-show="createNote.title.$error.required">This is a required field</span>
+                                        <span ng-show="createNote.title.$error.minlength">Minimum length required is 3</span>
+                                        <span ng-show="createNote.title.$invalid">This field is invalid </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group col-md-12">
+                                <label class="col-md-2 control-lable" for="content">Content</label>
+                                <div class="col-md-7">
+                                    <textarea ng-model="ctrl.note.content" id="content" class="content form-control input-sm" placeholder="Enter note's Content" required ng-minlength="10" rows="8"></textarea>
+                                    <div class="has-error" ng-show="createNote.$dirty">
+                                        <span ng-show="createNote.content.$error.required">This is a required field</span>
+                                        <span ng-show="createNote.content.$error.minlength">Minimum length required is 10</span>
+                                        <span ng-show="createNote.content.$invalid">This field is invalid </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-group col-md-12">
+                                <label class="col-md-2 control-lable" for="tags">Tags</label>
+                                <div class="col-md-7">
+                                    <tags-input ng-model="ctrl.note.tags" id="tags"></tags-input>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row" ng-hide="ctrl.note.id == null">
+                            <div class="form-group col-md-12">
+                                <label class="col-md-2 control-lable" for="file">File upload</label>
+                                <div class="col-md-7">
+                                    <input id="file" type="file" ngf-select ng-model="uploadedFile" name="file" ngf-accept="'image/*'" class="form-control input-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="form-actions floatRight">
+                                <div class="col-md-7">
+                                    <input type="button" ng-click="ctrl.submit()" value="{{!ctrl.note.id ? 'Add' : 'Update'}}" class="btn btn-primary btn-sm" ng-disabled="createNote.$invalid">
+                                    <button type="button" ng-click="ctrl.reset()" class="btn btn-warning btn-sm" ng-disabled="createNote.$pristine" ng-hide="ctrl.note.id != null">Reset Form</button>
+                                    <button ng-click="ctrl.uploadFile(uploadedFile)" class="btn btn-warning btn-sm" ng-hide="ctrl.note.id == null">Upload file</button>
+                                    <div ng-hide="ctrl.note.id == null">
+                                        <img ngf-src="uploadedFile" class="thumb">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="panel panel-default">
+                <div class="panel-heading"><span class="lead">Notes</span></div>
+                    <div ng-repeat="note in ctrl.notes">
+                        <div class="form-group col-md-12">
+                            <hr/>
+                            <span ng-bind="note.title" class="lead"></span>
+                        </div>
+                        <div class="form-group col-md-12">
+                            <span ng-bind="note.content"></span>
+                        </div>
+                        <div class="form-group col-md-12">
+                            <tags-input ng-model="note.tags"></tags-input>
+                        </div>
+                        <div class="form-group col-md-12" ng-repeat="attachment in note.attachments">
+                            <div ng-show="attachment.content!=''">
+                                <img ng-src="data:image/jpeg;base64,{{attachment.content}}" id="photo-id"/>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-12">
+                            <a href="#" ng-click="showChanges = ! showChanges">Show changes</a>
+                            <div ng-show="showChanges">
+                                <div ng-repeat="change in note.changes">
+                                    <div class="row">
+                                        <label class="col-md-1 control-lable">type</label>
+                                        <span class="col-md-1 control-lable" ng-bind="change.type"></span>
+                                        <label class="col-md-1 control-lable">date</label>
+                                        <span>{{change.date}}</span>
+                                    </div>
+
+                                    <div ng-repeat="diff in change.diffs">
+                                        <div class="row">
+                                            <label class="col-md-1 control-lable">changed parameter</label>
+                                            <span class="col-md-1 control-lable" ng-bind="diff.type"></span>
+                                            <label class="col-md-1 control-lable">before</label>
+                                            <span class="col-md-3 control-lable" ng-bind="diff.before"></span>
+                                            <label class="col-md-1 control-lable">after</label>
+                                            <span class="col-md-3 control-lable" ng-bind="diff.after"></span>
+                                        </div>
+                                    </div>
+
+                                    <hr/>
+
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group col-md-12">
+                            <button type="button" ng-click="ctrl.edit(note.id)" class="btn btn-success custom-width">Edit</button>
+                            <button type="button" ng-click="ctrl.remove(note.id)" class="btn btn-danger custom-width">Remove</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+    </body>
+
+    <script src="js/bower_components/angular/angular.min.js"></script>
+    <script type="text/javascript" src="js/bower_components/ng-tags-input/ng-tags-input.min.js"></script>
+
+    <script src="js/app.js"></script>
+    <script src="js/service/note_service.js"></script>
+    <script src="js/controller/note_controller.js"></script>
+
+    <script src="js/bower_components/ng-file-upload/ng-file-upload-shim.js"></script>
+    <script src="js/bower_components/ng-file-upload/ng-file-upload.js"></script>
+
+</html>
