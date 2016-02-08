@@ -1,10 +1,7 @@
 package com.solanteq.test;
 
-import com.solanteq.test.emulator.RandomPingCalculatorEmulator;
-import com.solanteq.test.emulator.SimpleCalculatorEmulator;
-import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
+import org.mockito.Mockito;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -16,66 +13,141 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import static junit.framework.Assert.assertEquals;
+import static junit.framework.Assert.assertNotNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.when;
 
 public class SyncPointTest {
 
-    private SyncPoint syncPoint;
+    public static final int SLEEP_TIME = 5_000;
+    
+    private SyncPoint syncPoint = new SyncPoint();
 
     private SecureRandom random = new SecureRandom();
 
-    @Before
-    public void setUp() {
-        syncPoint = new SyncPoint();
-        syncPoint.setCalculator(new SimpleCalculatorEmulator());
-    }
-
     @Test
-    public void getCalculatedValueFor1Request() throws Exception {
+    public void getFastCalculatedValueFor1Request() throws Exception {
         int requestCount = 1;
-        syncPoint.setCalculator(new SimpleCalculatorEmulator());
 
+        setFastCalculatorMock();
         doTestWithRequestCount(requestCount);
     }
 
     @Test
-    public void getCalculatedValueFor100Request() throws Exception {
+    public void getFastCalculatedValueFor100Request() throws Exception {
         int requestCount = 100;
-        syncPoint.setCalculator(new SimpleCalculatorEmulator());
 
+        setFastCalculatorMock();
         doTestWithRequestCount(requestCount);
     }
 
     @Test
-    public void getCalculatedValueFor10_000Request() throws Exception {
-        int requestCount = 10_000;
-        syncPoint.setCalculator(new SimpleCalculatorEmulator());
+    public void getFastCalculatedValueFor1_000Request() throws Exception {
+        int requestCount = 1_000;
 
+        setFastCalculatorMock();
         doTestWithRequestCount(requestCount);
     }
 
     @Test
     public void getRandomPingCalculatedValueFor1Request() throws Exception {
         int requestCount = 1;
-        syncPoint.setCalculator(new RandomPingCalculatorEmulator());
 
+        setRandomTimeAsyncCalculatorMock();
         doTestWithRequestCount(requestCount);
     }
+
 
     @Test
     public void getRandomPingCalculatedValueFor100Request() throws Exception {
         int requestCount = 100;
-        syncPoint.setCalculator(new RandomPingCalculatorEmulator());
 
+        setRandomTimeAsyncCalculatorMock();
         doTestWithRequestCount(requestCount);
     }
 
     @Test
-    @Ignore
-    public void getRandomPingCalculatedValueFor10_000Request() throws Exception {
-        int requestCount = 10_000;
-        syncPoint.setCalculator(new RandomPingCalculatorEmulator());
+    public void getRandomPingCalculatedValueFor1_000Request() throws Exception {
+        int requestCount = 1_000;
 
+        setRandomTimeAsyncCalculatorMock();
         doTestWithRequestCount(requestCount);
+    }
+
+    @Test
+    public void getSlowCalculatedValueFor1Request() throws Exception {
+        int requestCount = 1;
+
+        setSlowAsyncCalculatorMock();
+        doTestWithRequestCount(requestCount);
+    }
+
+
+    @Test
+    public void getSlowCalculatedValueFor100Request() throws Exception {
+        int requestCount = 100;
+
+        setSlowAsyncCalculatorMock();
+        doTestWithRequestCount(requestCount);
+    }
+
+    @Test
+    public void getSlowPingCalculatedValueFor1_000Request() throws Exception {
+        int requestCount = 1_000;
+
+        setSlowAsyncCalculatorMock();
+        doTestWithRequestCount(requestCount);
+    }
+
+    private void setRandomTimeAsyncCalculatorMock() {
+        Calculator mockSimpleCalculator = createMock(PingType.RANDOM);
+
+        syncPoint.setCalculator(mockSimpleCalculator);
+    }
+
+    private void setFastCalculatorMock() {
+        Calculator mockSimpleCalculator = createMock(PingType.FAST);
+
+        syncPoint.setCalculator(mockSimpleCalculator);
+    }
+
+    private void setSlowAsyncCalculatorMock() {
+        Calculator mockSimpleCalculator  = createMock(PingType.SLOW);
+
+        syncPoint.setCalculator(mockSimpleCalculator);
+    }
+
+    private Calculator createMock(PingType pingType) {
+        ExecutorService executorService = Executors.newFixedThreadPool(32);
+        Calculator mockSimpleCalculator  = Mockito.mock(Calculator.class);
+        when(mockSimpleCalculator.calculate(any(String.class), any(DataConsumer.class))).then(x -> {
+                    UUID uuid = UUID.randomUUID();
+                    executorService.submit(() -> {
+                        sleepForPing(pingType);
+                        DataConsumer dataConsumer = (DataConsumer) x.getArguments()[1];
+                        dataConsumer.accept(uuid, calculateSecretFormula((String) x.getArguments()[0]));
+                    });
+
+                    return uuid;
+                }
+        );
+        return mockSimpleCalculator;
+    }
+
+    private void sleepForPing(PingType pingType) {
+        try {
+            switch (pingType) {
+                case FAST:
+                    break;
+                case RANDOM:
+                    Thread.sleep(random.nextInt(SLEEP_TIME));
+                    break;
+                case SLOW:
+                    Thread.sleep(SLEEP_TIME);
+            }
+        } catch (InterruptedException e) {
+            throw new AssertionError();
+        }
     }
 
     private void doTestWithRequestCount(int requestCount) throws Exception {
@@ -98,15 +170,13 @@ public class SyncPointTest {
         }
     }
 
-
     private void checkResponse(List<String> requestValues, List<Future<Integer>> responses) throws Exception {
         int i = 0;
         for(Future<Integer> response: responses) {
             Integer responseValue = response.get();
-            Integer expectedValue = calculateSecretFormula(requestValues, i);
+            assertNotNull(responseValue);
+            assertEquals(Integer.valueOf(calculateSecretFormula(requestValues.get(i))), responseValue);
             i++;
-
-            assertEquals(expectedValue, responseValue);
         }
     }
 
@@ -124,12 +194,7 @@ public class SyncPointTest {
         return randomString.substring(randomStringLength);
     }
 
-    private int calculateSecretFormula(List<String> requestValues, int i) {
-        /*
-         * Done for simplify test task,
-         * In test for production system for Calculator service need to create emulator service
-         * and use SyncPoint with @Autowired Calculator calculator -> @Autowired Emulator emulator
-         */
-        return (requestValues.get(i) == null ? "" : requestValues.get(i)).length() * 42;
+    private int calculateSecretFormula(String requestValue) {
+        return (requestValue == null ? "" : requestValue).length() * 42;
     }
 }

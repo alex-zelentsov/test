@@ -27,7 +27,6 @@ public class SyncPoint {
 
      /**
      * Method performs synchronisation via callback method
-     * Get value from callback
      *
      * @param value from request handler
      * @return value from callback
