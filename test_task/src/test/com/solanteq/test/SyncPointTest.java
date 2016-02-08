@@ -1,11 +1,10 @@
 package com.solanteq.test;
 
+import com.solanteq.test.emulator.RandomPingCalculatorEmulator;
+import com.solanteq.test.emulator.SimpleCalculatorEmulator;
+import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
-import org.springframework.test.context.web.WebAppConfiguration;
 
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -18,28 +17,76 @@ import java.util.concurrent.Future;
 
 import static junit.framework.Assert.assertEquals;
 
-@RunWith(SpringJUnit4ClassRunner.class)
-@ContextConfiguration(classes = {AppConfig.class})
-@WebAppConfiguration
 public class SyncPointTest {
 
-    private static final int REQUEST_COUNT = 1000;
-
-    @Autowired
     private SyncPoint syncPoint;
 
     private SecureRandom random = new SecureRandom();
 
+    @Before
+    public void setUp() {
+        syncPoint = new SyncPoint();
+        syncPoint.setCalculator(new SimpleCalculatorEmulator());
+    }
+
     @Test
-    public void testGetCalculatedValue() throws Exception {
+    public void getCalculatedValueFor1Request() throws Exception {
+        int requestCount = 1;
+        syncPoint.setCalculator(new SimpleCalculatorEmulator());
+
+        doTestWithRequestCount(requestCount);
+    }
+
+    @Test
+    public void getCalculatedValueFor100Request() throws Exception {
+        int requestCount = 100;
+        syncPoint.setCalculator(new SimpleCalculatorEmulator());
+
+        doTestWithRequestCount(requestCount);
+    }
+
+    @Test
+    public void getCalculatedValueFor10_000Request() throws Exception {
+        int requestCount = 10_000;
+        syncPoint.setCalculator(new SimpleCalculatorEmulator());
+
+        doTestWithRequestCount(requestCount);
+    }
+
+    @Test
+    public void getRandomPingCalculatedValueFor1Request() throws Exception {
+        int requestCount = 1;
+        syncPoint.setCalculator(new RandomPingCalculatorEmulator());
+
+        doTestWithRequestCount(requestCount);
+    }
+
+    @Test
+    public void getRandomPingCalculatedValueFor100Request() throws Exception {
+        int requestCount = 100;
+        syncPoint.setCalculator(new RandomPingCalculatorEmulator());
+
+        doTestWithRequestCount(requestCount);
+    }
+
+    @Test
+    @Ignore
+    public void getRandomPingCalculatedValueFor10_000Request() throws Exception {
+        int requestCount = 10_000;
+        syncPoint.setCalculator(new RandomPingCalculatorEmulator());
+
+        doTestWithRequestCount(requestCount);
+    }
+
+    private void doTestWithRequestCount(int requestCount) throws Exception {
         ExecutorService executorService = null;
         try {
-            List<Callable<Integer>>  requests = new ArrayList<>();
+            List<Callable<Integer>> requests = new ArrayList<>();
             List<String> requestValues = new ArrayList<>();
 
-            fillRequestsLists(requests, requestValues);
+            fillRequestsLists(requests, requestValues, requestCount);
 
-            executorService = Executors.newFixedThreadPool(REQUEST_COUNT);
+            executorService = Executors.newFixedThreadPool(32);
             List<Future<Integer>> responses = executorService.invokeAll(requests);
 
             checkResponse(requestValues, responses);
@@ -50,6 +97,7 @@ public class SyncPointTest {
             }
         }
     }
+
 
     private void checkResponse(List<String> requestValues, List<Future<Integer>> responses) throws Exception {
         int i = 0;
@@ -62,8 +110,8 @@ public class SyncPointTest {
         }
     }
 
-    private void fillRequestsLists(List<Callable<Integer>> requests, List<String> requestValues) {
-        for (int i = 0; i < REQUEST_COUNT; i++) {
+    private void fillRequestsLists(List<Callable<Integer>> requests, List<String> requestValues, int requestCount) {
+        for (int i = 0; i < requestCount; i++) {
             String requestValue = getRandomString();
             requestValues.add(requestValue);
             requests.add(() -> syncPoint.getCalculatedValue(requestValue));
