@@ -5,14 +5,14 @@ import exel_handler.excel.sheet.Sheet;
 /**
  * @author azelentsov
  */
-public class DefaultRowSet implements RowSet {
+public class PoiRowSet implements RowSet {
 
     private final Sheet sheet;
 
     private int currentRowIndex = -1;
     private String[] currentRow;
 
-    DefaultRowSet(Sheet sheet) {
+    PoiRowSet(Sheet sheet) {
         this.sheet = sheet;
     }
 

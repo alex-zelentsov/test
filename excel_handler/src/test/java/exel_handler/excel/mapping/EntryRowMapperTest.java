@@ -1,6 +1,6 @@
 package exel_handler.excel.mapping;
 
-import exel_handler.excel.rowset.DefaultRowSetFactory;
+import exel_handler.excel.rowset.PoiRowSetFactory;
 import exel_handler.excel.rowset.RowSet;
 import exel_handler.excel.mapping.mock.MockSheet;
 import exel_handler.model.Entry;
@@ -20,7 +20,7 @@ public class EntryRowMapperTest{
         EntryRowMapper entryRowMapper = new EntryRowMapper();
         final String[] row = new String[]{"12", "test", "10.4", "1358625600000"};
         MockSheet sheet = new MockSheet("mock", Collections.singletonList(row));
-        RowSet rs = new DefaultRowSetFactory().create(sheet);
+        RowSet rs = new PoiRowSetFactory().create(sheet);
         assertTrue(rs.next());
         Entry entry = entryRowMapper.mapRow(rs);
         assertNotNull(entry);

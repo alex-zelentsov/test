@@ -21,7 +21,7 @@ public class ExcelUploadService implements UploadService {
     public static final String DEFAULT_FILE_NAME = "excel_";
     public static final String TYPE = ".xlsx";
 
-    AtomicInteger fileNumber = new AtomicInteger(0);
+    private AtomicInteger fileNumber = new AtomicInteger(0);
 
     private HandleService handleService;
 
@@ -37,28 +37,33 @@ public class ExcelUploadService implements UploadService {
     }
 
     private String saveFile(MultipartFile file) throws IOException {
-        return write(file.getInputStream() , EXCEL_FILES_DIR + DEFAULT_FILE_NAME + fileNumber.getAndIncrement() + TYPE);
+        return writeFileToPath(file.getInputStream(),
+                EXCEL_FILES_DIR + DEFAULT_FILE_NAME + fileNumber.getAndIncrement() + TYPE);
     }
 
-    private String write(InputStream is, String path) throws IOException {
+    private String writeFileToPath(InputStream is, String path) throws IOException {
         String result;
         Path filePath = Paths.get(path);
         try(
-                OutputStream os = Files.newOutputStream(
-                        filePath,
+                OutputStream os = Files.newOutputStream(filePath,
                         StandardOpenOption.CREATE,
                         StandardOpenOption.APPEND,
-                        StandardOpenOption.SYNC
-                );
+                        StandardOpenOption.SYNC);
                 InputStream input = is
         ) {
-            byte[] buffer = new byte[1024];
-            int bytesRead;
-            while((bytesRead = input.read(buffer)) !=-1) {
-                os.write(buffer, 0, bytesRead);
-            }
-            result = path;
+            result = write(path, os, input);
         }
+        return result;
+    }
+
+    private String write(String path, OutputStream os, InputStream input) throws IOException {
+        String result;
+        byte[] buffer = new byte[1024];
+        int bytesRead;
+        while((bytesRead = input.read(buffer)) !=-1) {
+            os.write(buffer, 0, bytesRead);
+        }
+        result = path;
         return result;
     }
 

@@ -2,7 +2,7 @@ package exel_handler.excel.reader;
 
 import exel_handler.excel.exception.ExcelFileParseException;
 import exel_handler.excel.mapping.RowMapper;
-import exel_handler.excel.rowset.DefaultRowSetFactory;
+import exel_handler.excel.rowset.PoiRowSetFactory;
 import exel_handler.excel.rowset.RowSet;
 import exel_handler.excel.rowset.RowSetFactory;
 import exel_handler.excel.sheet.PoiSheet;
@@ -29,7 +29,7 @@ public class PoiItemReader<T> extends AbstractItemCountingItemStreamItemReader<T
     private Resource resource;
     private RowMapper<T> rowMapper;
     private boolean noInput = false;
-    private RowSetFactory rowSetFactory = new DefaultRowSetFactory();
+    private RowSetFactory rowSetFactory = new PoiRowSetFactory();
     private RowSet rs;
     private Workbook workbook;
     private InputStream workbookStream;
