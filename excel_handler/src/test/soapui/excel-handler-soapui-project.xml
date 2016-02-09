@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<con:soapui-project id="24bfab4c-13c0-4b20-a2ef-3326d247049a" activeEnvironment="Default" name="Project 1" resourceRoot="" soapui-version="5.2.1" xmlns:con="http://eviware.com/soapui/config"><con:settings/><con:testSuite id="8ffe50bd-47a9-41fd-818d-1d38f1743390" name="TestSuite 1"><con:settings/><con:runType>SEQUENTIAL</con:runType><con:testCase id="6a5980a7-3bee-41a1-9eb2-63257a32c52e" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="TestCase 1" searchProperties="true"><con:settings/><con:testStep type="groovy" name="Groovy Script" id="4097c154-0deb-4992-8dad-7543554db967"><con:settings/><con:config><script>//-----Загрузка класса из библиотеки-----
+library = testRunner.testCase.testSuite.project.testSuites["Library"]
+module = library.testCases["Attach"].testSteps["fileAttacher"]
+module.run(testRunner, context)
+def signScripts = context.signScripts
+//-----конец загрузки-----
+
+def testCase = testRunner.testCase;
+def project = testRunner.testCase.testSuite.project;
+
+//Путь до папки тестовых данных
+String testDataDir = project.getPropertyValue("TEST_DATA_DIR");
+
+String attachFileName = testCase.getPropertyValue( "FILE_NAME" );
+String testCaseName = testRunner.testCase.name;
+String testSuitName = testRunner.testCase.testSuite.name;
+
+String testCaseDir = testDataDir + testSuitName +"\\" + testCaseName + "\\" ;
+String outputFileName = testCaseDir + attachFileName;
+
+signScripts.attachFile(testCase, "request", outputFileName)
+
+log.info("Скрипт успешно выполнен");</script></con:config></con:testStep><con:testStep type="httprequest" name="request" id="7193ab33-49c2-4845-a717-bb482970d6cb"><con:settings/><con:config method="POST" xsi:type="con:HttpRequest" id="02c94786-def2-49b3-8ffc-e31b6c5d2212" name="request" postQueryString="false" mediaType="multipart/form-data" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:endpoint>http://localhost:8080/upload</con:endpoint><con:request/><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:attachment><con:name>test_10_entries.xlsx</con:name><con:contentType>application/octet-stream</con:contentType><con:contentId>file</con:contentId><con:url>C:/soapui_projects/SoapUi_v7/TestSuite 1/TestCase 1/test_10_entries.xlsx</con:url><con:id>f01230fc-1aaf-4919-9afb-eb8fcc8d3db8</con:id></con:attachment><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters/></con:config></con:testStep><con:testStep type="httprequest" name="result" id="dd9d59c5-0ba5-4d04-887e-38af98e8c846"><con:settings/><con:config method="GET" xsi:type="con:HttpRequest" id="10f0702a-83f4-4d2f-abd4-570a3d056367" name="result" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"><con:settings><con:setting id="com.eviware.soapui.impl.wsdl.WsdlRequest@request-headers">&lt;xml-fragment/></con:setting></con:settings><con:endpoint>http://localhost:8080/result</con:endpoint><con:request/><con:credentials><con:authType>No Authorization</con:authType></con:credentials><con:jmsConfig JMSDeliveryMode="PERSISTENT"/><con:jmsPropertyConfig/><con:parameters/></con:config></con:testStep><con:properties><con:property><con:name>FILE_NAME</con:name><con:value>test_10_entries.xlsx</con:value></con:property></con:properties></con:testCase><con:properties/></con:testSuite><con:testSuite id="1f113f0b-6a4e-49f4-a14f-ce084b1ec03c" name="Library" disabled="true"><con:settings/><con:runType>SEQUENTIAL</con:runType><con:testCase id="5439886b-8605-4678-a34f-56ea7ff05b11" failOnError="true" failTestCaseOnErrors="true" keepSession="false" maxResults="0" name="Attach" searchProperties="true"><con:settings/><con:testStep type="groovy" name="fileAttacher" id="756fc2b6-88a7-43b8-be1e-906e3d704f08"><con:settings/><con:config><script>import java.io.FileInputStream;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.Signature;
+import java.util.zip.ZipFile;
+import java.util.zip.GZIPOutputStream;
+import java.nio.charset.Charset;
+import org.apache.commons.codec.binary.Base64;
+import java.security.MessageDigest;
+import java.util.zip.GZIPInputStream;
+import java.io.ByteArrayInputStream;
+import java.io.RandomAccessFile;
+
+class signScripts {
+	def log
+	def context
+	def testRunner
+
+	def signScripts(logIn,contextIn,testRunnerIn) {
+		this.log = logIn
+		this.context = contextIn
+		this.testRunner = testRunnerIn
+	}
+
+	def signFile(certificateFileName, certificatePassword, clientId, csvFileName, outputGzFileName) {
+		//Загружаем сертификат из папки с тетовыми данными данного тесткейса
+		log.info("Загружаем сертификат :"+certificateFileName);
+		KeyStore keyStore = java.security.KeyStore.getInstance("PKCS12");
+		FileInputStream certificateFile = new FileInputStream(certificateFileName);
+		keyStore.load(certificateFile, certificatePassword.toCharArray());
+		//Получаем приватный ключ из сертификата
+		PrivateKey key = (PrivateKey)keyStore.getKey(clientId, certificatePassword.toCharArray());
+		certificateFile.close();
+
+		//Создаем объет для подписи по SHA1 RSA алг.
+		MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+		Signature sign = Signature.getInstance("SHA1WithRSA");
+		sign.initSign(key);
+
+		//Читаем входной CSV файл
+		log.info("Загружаем csv :"+csvFileName);
+		prepareEndLinesInCsvFile(csvFileName);
+		FileInputStream inputCsvFile = new FileInputStream(csvFileName);
+		GZIPOutputStream outputGzFile = new GZIPOutputStream(new FileOutputStream(outputGzFileName));
+
+		byte[] buffer = new byte[32768];
+		log.info("Архивируем csv файл.");
+		int len;
+		while ((len = inputCsvFile.read(buffer)) > 0) {
+			messageDigest.update(buffer, 0, len);
+			outputGzFile.write(buffer, 0, len);
+		}
+		log.info("Упаковка завершена");
+
+		//Считаем подпись CSV файла
+		log.info("Считаем подпись csv файла");
+		sign.update(messageDigest.digest());
+		//Переводим в Base64
+		byte[] signedData = Base64.encodeBase64(sign.sign());
+
+		//Подпись должна быть с новой строки, поэтому пишем этот символ перед подпиьсю.
+		log.info("Записываем подпись в архив.");
+		outputGzFile.write(signedData, 0, signedData.length);
+
+		log.info("Закрываем файлы.");
+		inputCsvFile.close();
+		outputGzFile.finish();
+		outputGzFile.close();
+	}
+
+	void prepareEndLinesInCsvFile(String csfFileName) {
+		log.info "Удаляем лишние строки в csv файле";
+		RandomAccessFile csvFile = new RandomAccessFile(csfFileName,"rw");
+		csvFile.seek(csvFile.length());
+		csvFile.write(new String("\n").getBytes());
+		csvFile.seek(0);
+
+		long prevFilePointer = csvFile.getFilePointer();
+		while(true) {
+			String readedLine = csvFile.readLine();
+			if(readedLine==null || readedLine.trim()=="") {
+				csvFile.setLength(prevFilePointer);
+				break;
+			}
+			prevFilePointer = csvFile.getFilePointer();
+		}
+		csvFile.close();
+	}
+
+	byte[] signString(certificateFileName, certificatePassword, clientId, stringToSign) {
+		//Загружаем сертификат из папки с тетовыми данными данного тесткейса
+		log.info("Загружаем сертификат :"+certificateFileName);
+		KeyStore keyStore = java.security.KeyStore.getInstance("PKCS12");
+		FileInputStream certificateFile = new FileInputStream(certificateFileName);
+		keyStore.load(certificateFile, certificatePassword.toCharArray());
+		//Получаем приватный ключ из сертификата
+		PrivateKey key = (PrivateKey)keyStore.getKey(clientId, certificatePassword.toCharArray());
+		certificateFile.close();
+
+		//Создаем объет для подписи по SHA1 RSA алг.
+		log.info("Считаем подпись");
+		MessageDigest messageDigest = MessageDigest.getInstance("SHA-256");
+		Signature sign = Signature.getInstance("SHA1WithRSA");
+		sign.initSign(key);
+		messageDigest.update(stringToSign.getBytes());
+		sign.update(messageDigest.digest());
+		byte[] signature = Base64.encodeBase64(sign.sign());
+		log.info("Подпись готова");
+		return signature;
+	}
+
+	void attachFile(def testCase, String stepName, String fileName) {
+		log.info("Добавляем csv.gz файл к запросу");
+		def request = testCase.getTestStepByName( stepName).testRequest;
+		for( a in request.attachments ) {
+   			request.removeAttachment( a )
+		}
+		def attachment = request.attachFile(new File(fileName),false);
+		attachment.contentID = "file";
+	}
+
+	String unzipAndShowResponseJson(def testStepName) {
+		def testStep = testRunner.testCase.testSteps[testStepName];
+		
+		byte[] rawResponse = testStep.testRequest.response.getRawResponseData();
+		int fileLength = testStep.testRequest.response.getContentLength();
+		GZIPInputStream gis = new GZIPInputStream(new ByteArrayInputStream(rawResponse, rawResponse.length-fileLength, fileLength));
+		
+		byte[] buffer = new byte[2048];
+		int len;
+		String str = "";
+		while((len = gis.read(buffer ))>0) {
+			str = str + new String(buffer, 0, len);
+		}
+		log.info str;
+		gis.close();
+		return str;
+	}
+}
+
+context.setProperty( "signScripts", new signScripts( log, context, testRunner) )</script></con:config></con:testStep><con:properties/></con:testCase><con:properties/></con:testSuite><con:properties><con:property><con:name>TEST_DATA_DIR</con:name><con:value>C:\soapui_projects\SoapUi_v7\</con:value></con:property></con:properties><con:wssContainer/><con:oAuth2ProfileContainer/><con:sensitiveInformation/></con:soapui-project>
