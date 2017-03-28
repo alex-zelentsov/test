@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<data-map xmlns="http://cayenne.apache.org/schema/9/modelMap"
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xsi:schemaLocation="http://cayenne.apache.org/schema/9/modelMap http://cayenne.apache.org/schema/9/modelMap.xsd"
+	 project-version="9">
+	<property name="defaultPackage" value="persistent"/>
+	<db-entity name="ACCOUNT">
+		<db-attribute name="AMOUNT" type="DECIMAL"/>
+		<db-attribute name="ID" type="BIGINT" isPrimaryKey="true" isMandatory="true"/>
+	</db-entity>
+	<obj-entity name="Account" className="persistent.Account" dbEntityName="ACCOUNT">
+		<obj-attribute name="amount" type="java.math.BigDecimal" db-attribute-path="AMOUNT"/>
+		<obj-attribute name="id" type="long" db-attribute-path="ID"/>
+	</obj-entity>
+</data-map>
